@@ -90,8 +90,23 @@ size_t MemoryAllocator_free(MemoryAllocator *allocator, void *ptr) {
 }
 
 
-/*
+/* Return the size of largest free block */
+size_t MemoryAllocator_optimize(MemoryAllocator *allocator) {
 
-size_t MemoryAllocator_free(MemoryAllocator *allocator, void *ptr);
+    void *current_block = allocator->m_memory_pool_ptr;
+    size_t largest_free_block = ((*((size_t *) current_block)) & ~(1));
+    size_t *end_of_memory_pool_ptr = (size_t *) current_block + allocator->m_memory_size;
 
-size_t MemoryAllocator_optimize(MemoryAllocator *allocator);*/
+    MemoryAllocator_allocate(allocator, allocator->m_memory_size);
+
+    while (current_block != end_of_memory_pool_ptr) {
+
+        if (((*((size_t *) current_block) & AVAILABLE_BIT) == AVAILABLE_BIT) && ((*((size_t *) current_block)) & ~(1)) > largest_free_block)
+            largest_free_block = ((*((size_t *) current_block)) & ~(1));
+
+        (size_t *) current_block =
+                (size_t *) current_block + ((*((size_t *) current_block)) & ~(1)) + MANAGER_SIZE;
+    }
+
+    return largest_free_block;
+}
