@@ -43,24 +43,24 @@ void *MemoryAllocator_allocate(MemoryAllocator *allocator, size_t size) {
                 if ((*((size_t *) current_block)) & ~(AVAILABLE_BIT) > aligned_size)){
                     /*block bigger then size. set rest as new block*/
                     (size_t *) next_block = ((size_t *) current_block) + aligned_size + MANAGER_SIZE;
-                    (size_t *) next_block =
-                            ((*((size_t *) current_block)) & ~(AVAILABLE_BIT)) - aligned_size - MANAGER_SIZE;
+                    (size_t *) next_block = ((*((size_t *) current_block)) & ~(AVAILABLE_BIT)) - aligned_size - MANAGER_SIZE;
                     *((size_t *) next_block) |= AVAILABLE_BIT << 0;
                 }
                 *((size_t *) current_block) = aligned_size;
                 *((size_t *) current_block) |= OCCUPIED_BIT << 0;
                 return current_block;
             } else {
-                (size_t *) next_block =
-                        ((size_t *) current_block) + ((*(size_t *) current_block) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
+                (size_t *) next_block = ((size_t *) current_block) + ((*(size_t *) current_block) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
                 if ((*((size_t *) current_block)) & AVAILABLE_BIT) {
                     /*free block found. join with self*/
                     (*((size_t *) current_block)) = ((*(size_t *) current_block) & ~(AVAILABLE_BIT)) + ((*(size_t *) next_block) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
                     *((size_t *) current_block) |= AVAILABLE_BIT << 0;
                 }
             }
+        } else {
+            /*set iterator to next block*/
+            *((size_t *) current_block) = ((size_t *) current_block) + ((*((size_t *) current_block)) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
         }
-        *((size_t *) current_block) += ((size_t *) current_block) + ((*((size_t *) current_block)) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
     }
     return NULL;
 }
