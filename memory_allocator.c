@@ -28,7 +28,6 @@ MemoryAllocator *MemoryAllocator_init(void *memoryPool, size_t size) {
 void *MemoryAllocator_allocate(MemoryAllocator *allocator, size_t size) {
     void *next_block;
     void *current_block = allocator->m_memory_pool_ptr;
-    size_t index;
     size_t *end_of_memory_pool_ptr = (size_t *) current_block + allocator->m_memory_size;
     size_t aligned_size = size;
 
@@ -43,34 +42,55 @@ void *MemoryAllocator_allocate(MemoryAllocator *allocator, size_t size) {
                 if ((*((size_t *) current_block)) & ~(AVAILABLE_BIT) > aligned_size)){
                     /*block bigger then size. set rest as new block*/
                     (size_t *) next_block = ((size_t *) current_block) + aligned_size + MANAGER_SIZE;
-                    (size_t *) next_block = ((*((size_t *) current_block)) & ~(AVAILABLE_BIT)) - aligned_size - MANAGER_SIZE;
+                    (size_t *) next_block =
+                            ((*((size_t *) current_block)) & ~(AVAILABLE_BIT)) - aligned_size - MANAGER_SIZE;
                     *((size_t *) next_block) |= AVAILABLE_BIT << 0;
                 }
                 *((size_t *) current_block) = aligned_size;
                 *((size_t *) current_block) |= OCCUPIED_BIT << 0;
                 return current_block;
             } else {
-                (size_t *) next_block = ((size_t *) current_block) + ((*(size_t *) current_block) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
+                (size_t *) next_block =
+                        ((size_t *) current_block) + ((*(size_t *) current_block) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
                 if ((*((size_t *) current_block)) & AVAILABLE_BIT) {
                     /*free block found. join with self*/
-                    (*((size_t *) current_block)) = ((*(size_t *) current_block) & ~(AVAILABLE_BIT)) + ((*(size_t *) next_block) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
+                    (*((size_t *) current_block)) = ((*(size_t *) current_block) & ~(AVAILABLE_BIT)) +
+                                                    ((*(size_t *) next_block) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
                     *((size_t *) current_block) |= AVAILABLE_BIT << 0;
                 }
             }
         } else {
             /*set iterator to next block*/
-            *((size_t *) current_block) = ((size_t *) current_block) + ((*((size_t *) current_block)) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
+            (size_t *) current_block =
+                    ((size_t *) current_block) + ((*((size_t *) current_block)) & ~(AVAILABLE_BIT)) + MANAGER_SIZE;
         }
     }
     return NULL;
 }
 
 
+/* Return number of still allocated blocks */
+size_t MemoryAllocator_free(MemoryAllocator *allocator, void *ptr) {
+
+
+    void *current_block = allocator->m_memory_pool_ptr;
+    size_t still_allocated_blocks = 0;
+    size_t *end_of_memory_pool_ptr = (size_t *) current_block + allocator->m_memory_size;
+
+    *((size_t *) ptr) |= AVAILABLE_BIT << 0;
+
+    while (current_block != end_of_memory_pool_ptr) {
+        if ((*((size_t *) current_block) & OCCUPIED_BIT) == OCCUPIED_BIT)
+            still_allocated_blocks += 1;
+        (size_t *) current_block =
+                (size_t *) current_block + ((*((size_t *) current_block)) & ~(1)) + MANAGER_SIZE;
+    }
+
+    return still_allocated_blocks;
+}
+
+
 /*
-MemoryAllocator *MemoryAllocator_init(void *memoryPool, size_t size);
-
-void *MemoryAllocator_allocate(MemoryAllocator *allocator, size_t size);
-
 
 size_t MemoryAllocator_free(MemoryAllocator *allocator, void *ptr);
 
